@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "include/minic.h"
 
+// 글로벌 vbltable 초기화해주기
 int main(int argc, char *argv[])
 {
    int i, flag;
