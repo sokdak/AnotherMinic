@@ -44,26 +44,24 @@ ast_tree_t* mknode_pcall(token_data_t token, ast_tree_t* arglist) {
 // input: tree->arg
 ast_tree_t* append_args(ast_tree_t* arg, ast_tree_t* org) {
   ast_tree_t* ret_tree = org;
-  ast_tree_t* list = ret_tree->arglist;
   
-  while (list != NULL) // NULL arg가 나올때 까지 반복
-    list = list->next;
+  while (ret_tree->arglist != NULL)
+    ret_tree = ret_tree->arglist;
 
-  list = arg;
+  ret_tree->arglist = arg;
 
-  return ret_tree;
+  return org;
 }
 
 ast_tree_t* append_stmts(ast_tree_t* arg, ast_tree_t* org) {
   ast_tree_t* ret_tree = org;
-  ast_tree_t* list = ret_tree->stmtlist;
   
-  while (list != NULL) // NULL arg가 나올때 까지 반복
-    list = list->next;
+  while (ret_tree->stmtlist != NULL) // NULL arg가 나올때 까지 반복
+    ret_tree = ret_tree->stmtlist;
 
-  list = arg;
+  ret_tree->stmtlist = arg;
 
-  return ret_tree;
+  return org;
 }
 
 ast_tree_t* mkleaf(token_data_t token) {
@@ -79,3 +77,4 @@ ast_tree_t* mkleaf(token_data_t token) {
 
   return newleaf;
 }
+

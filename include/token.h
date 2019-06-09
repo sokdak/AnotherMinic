@@ -44,7 +44,7 @@ typedef struct token_data {
     int intval;
     double doubleval;
     char* argval;
-    int funid;
+    char* funstr;
   } value;
 } token_data_t;
 

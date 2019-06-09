@@ -1,15 +1,15 @@
-%option yylineno
 %{
 #include <stdlib.h>
+#include <string.h>
 #include "minic.tab.h"
 #include "include/minic.h"
-
-extern double vbltable[100];
-extern int vblCount;
+#include "include/symbol.h"
+#include "include/node.h"
 %}
 %option noyywrap
+%option yylineno
 
-INTEGER       [1-9][0-9]*
+INTEGER       ([0]|[1-9][0-9]*)
 FLOAT         ([0-9]*\.[0-9]+)
 ID            (\_)*[A-Za-z][a-zA-Z0-9_]*
 DELIM         [ \t\r]
@@ -49,7 +49,12 @@ WS            {DELIM}+
 
 {INTEGER}     { yylval.ival = atoi(yytext); return T_INTEGER; }
 {FLOAT}       { yylval.dval = atof(yytext); return T_FLOAT; }
-{ID}          { yylval.vblno = vblCount++; return T_ID; } // vblno을 순차적으로 할당해 줌
+{ID}          { yylval.idval = strdup(yytext); return T_ID; }
 
 .             { yyerror("lexical error"); }
 %%
+// https://stackoverflow.com/questions/32472496/methods-in-yacc-to-get-line-no
+void yyerror(const char* msg)
+{
+  fprintf(stderr, "error: %s at line %d\n", msg, yylineno);
+}

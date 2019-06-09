@@ -7,7 +7,7 @@
 typedef enum symbol_type {
   TYPE_VARIABLE_INT,
   TYPE_VARIABLE_DOUBLE,
-  TYPE_VARIABLE_UNDEFINED
+  TYPE_VARIABLE_UNDEFINED = -1
 } symbol_type_t;
 
 // 함수 구현: yyparse 재호출
@@ -31,7 +31,16 @@ typedef struct symbol {
 
 int find_symbol(char *, symbol_t *);
 int get_list_size(symbol_t *);
+symbol_t* last_symbol(symbol_t *);
+symbol_t* get_symbol(int, symbol_t *);
 int insert_symbol(char *, symbol_t **);
 int insert_symbol_value(int, token_data_t, symbol_t **);
+bool symbol_exists_on_table(int, symbol_t *);
+
+void push_symboltable(symbol_t *);
+symbol_t* pop_symboltable();
+bool stack_isempty();
+
+void print_symboltable(symbol_t *);
 
 #endif
