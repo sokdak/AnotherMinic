@@ -33,9 +33,11 @@ int find_symbol(char *, symbol_t *);
 int get_list_size(symbol_t *);
 symbol_t* last_symbol(symbol_t *);
 symbol_t* get_symbol(int, symbol_t *);
+symbol_t* get_symbol_by_name(char *, symbol_t *);
 int insert_symbol(char *, symbol_t **);
-int insert_symbol_value(int, token_data_t, symbol_t **);
+int insert_symbol_value(char *, token_data_t, symbol_t **);
 bool symbol_exists_on_table(int, symbol_t *);
+bool symbol_exists_on_table_by_name(char *, symbol_t *);
 
 void push_symboltable(symbol_t *);
 symbol_t* pop_symboltable();

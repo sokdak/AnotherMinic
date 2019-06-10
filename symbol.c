@@ -5,7 +5,6 @@
 #include "include/symbol.h"
 #include "include/token.h"
 
-symbol_t* global_vblTable = NULL;
 symbol_t** vblTable_stack = NULL;
 int vblTable_stack_depth = 0;
 
@@ -46,6 +45,19 @@ symbol_t* get_symbol(int idx, symbol_t* list) {
 
     tmp = tmp->next;
     iidx++;
+  }
+
+  return NULL;
+}
+
+symbol_t* get_symbol_by_name(char* name, symbol_t* list) {
+  symbol_t* tmp = list;
+
+  while (tmp != NULL) {
+    if (strcmp(name, tmp->name) == 0)
+      return tmp;
+
+    tmp = tmp->next;
   }
 
   return NULL;
@@ -101,15 +113,24 @@ int insert_symbol(char* name, symbol_t** list) {
   return sindex;
 }
 
-int insert_symbol_value(int index, token_data_t data, symbol_t** list) {
-  if (data.type == TT_INT)
-    (*list[index]).value.integer_constant = data.value.intval;
-  else if (data.type == TT_FLOAT)
-    (*list[index]).value.real_constant = data.value.doubleval;
-  else return -1;
+int insert_symbol_value(char* name, token_data_t data, symbol_t** list) {
+  symbol_t* tmp = *list;
+  
+  while (tmp != NULL) {
+    if (strcmp(name, tmp->name) == 0) {
+      if (data.type == TT_INT)
+        tmp->value.integer_constant = data.value.intval;
+      else if (data.type == TT_FLOAT)
+        tmp->value.real_constant = data.value.doubleval;
+      else return -1;
 
-  (*list[index]).assigned = true;
-  return index;
+      tmp->assigned = true;
+    }
+
+    tmp = tmp->next;
+  }
+
+  return -1;
 }
 
 bool symbol_exists_on_table(int idx, symbol_t* sym) {
@@ -128,6 +149,20 @@ bool symbol_exists_on_table(int idx, symbol_t* sym) {
   }
 
   return fidx != -1 ? true : false;
+}
+
+bool symbol_exists_on_table_by_name(char* name, symbol_t* sym) {
+  fprintf(stderr, "name %s, sym %p\n", name, sym);
+  symbol_t* iter = sym;
+
+  while (iter != NULL) {
+    if (strcmp(name, iter->name) == 0)
+      return true;
+
+    iter = iter->next;
+  }
+
+  return false;
 }
 
 void push_symboltable(symbol_t* sym) {
@@ -156,7 +191,7 @@ bool stack_isempty() {
 void print_symboltable(symbol_t* list) {
   symbol_t* sym = list;
 
-  fprintf(stderr, "print symboltable\n");
+  fprintf(stderr, "print symboltable:: start\n");
 
   while (sym != NULL) {
     if (sym->type != TYPE_VARIABLE_INT) {
@@ -170,4 +205,6 @@ void print_symboltable(symbol_t* list) {
     
     sym = sym->next;
   }
+
+  fprintf(stderr, "print symboltable:: end\n");
 }

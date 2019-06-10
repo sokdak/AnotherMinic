@@ -40,9 +40,9 @@ typedef enum token_type {
 typedef struct token_data {
   token_type_t type;
   union {
-    int symid;
     int intval;
     double doubleval;
+    char* symval;
     char* argval;
     char* funstr;
   } value;

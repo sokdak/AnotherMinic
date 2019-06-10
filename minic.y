@@ -14,8 +14,6 @@
 #include "include/symbol.h"
 #include "include/log.h"
 #include "include/eval.h"
-
-extern symbol_t* global_vblTable;
 %}
 %locations
 %union {
@@ -64,9 +62,9 @@ program       : fun_list stmt_list {
                   program->function = $1;
                   program->statement = $2;
 
-                  full_log(program);
                   fprintf(stderr, "\n");
-                  eval(program, global_vblTable);
+                  eval(program);
+
                   full_log(program);
                 } // function + main context
               | stmt_list {
@@ -79,9 +77,9 @@ program       : fun_list stmt_list {
                   program->function = NULL;
                   program->statement = $1;
 
-                  full_log(program);
                   fprintf(stderr, "\n");
-                  eval(program, global_vblTable);
+                  eval(program);
+
                   full_log(program);
                 } // main context만 있는 경우
               ;
@@ -129,7 +127,7 @@ fun_def       : T_DEF T_ID T_LPAREN arg_list T_RPAREN T_LCURLY local_decl stmt_l
 // 함수 input (argument) 정의 -> function구조체의 arguments에 넣기
 arg_list        : T_ID T_COMMA arg_list {
                     token_data_t newtoken = { .type = TT_ARGS, .value.argval = strdup($1) };
-                    $$ = append_args($3, mkleaf(newtoken));
+                    $$ = append_args(mkleaf(newtoken), $3);
                   }
                 | T_ID {
                     token_data_t newtoken = { .type = TT_ARGS, .value.argval = strdup($1) };
@@ -296,14 +294,14 @@ expr          : value {
                     fprintf(stderr, "reduce to expr, T_ID\n");
 
                   // 노드 만들고 symid올리기
-                  token_data_t newtoken = { .type = TT_ID, .value.symval = insert_symbol($1, &global_vblTable) };
+                  token_data_t newtoken = { .type = TT_ID, .value.symval = strdup($1) };
                   $$ = mkleaf(newtoken);
                 }
               | T_ID T_ASSIGN expr { // 전역변수: 할당
                   if (YACC_DEBUG)
                     fprintf(stderr, "reduce to expr, T_ID assign expr\n");
 
-                  token_data_t newtoken_l = { .type = TT_ID, .value.symid = insert_symbol($1, &global_vblTable) };
+                  token_data_t newtoken_l = { .type = TT_ID, .value.symval = strdup($1) };
                   token_data_t newtoken = { .type = TT_ASSIGN };
                   $$ = mknode(newtoken, mkleaf(newtoken_l), $3);
                 }

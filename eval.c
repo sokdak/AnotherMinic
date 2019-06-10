@@ -13,19 +13,22 @@ void runtime_error(char* msg) {
   exit(0);
 }
 
-void eval(program_t* program, symbol_t* global) {
+void eval(program_t* program) {
   if (program->function)
     functions = program->function; // local symbol은 evaluation할 때 함수 진입시 할당
 
-  sym_global = global;
   main_procedure = program->statement;
 
-  fprintf(stderr, "main procedure: start\n");
+  if (EVAL_DEBUG)
+    fprintf(stderr, "main procedure: start\n");
+  
   while (main_procedure != NULL) {
     evaluation(main_procedure);
     main_procedure = main_procedure->stmtlist;
   }
-  fprintf(stderr, "main procedure: end\n");
+
+  if (EVAL_DEBUG)
+    fprintf(stderr, "main procedure: end\n");
 }
 
 rvalue_t evaluation(ast_tree_t *node) {
@@ -37,8 +40,10 @@ rvalue_t evaluation(ast_tree_t *node) {
   }
 
   token_data_t token_data = node->token;
-  fprintf(stderr, "\nprocessing token %d\n", token_data.type);
-  fprintf(stderr, "left: %p, right: %p\n", node->left, node->right);
+  
+  if (EVAL_DEBUG)
+    fprintf(stderr, "\nprocessing token %d, left %p, right %p\n",
+      token_data.type, node->left, node->right);
 
   if (token_data.type == TT_INT) {
     if (EVAL_DEBUG)
@@ -188,48 +193,81 @@ rvalue_t evaluation(ast_tree_t *node) {
     if (EVAL_DEBUG)
       fprintf(stderr, "[i] eval type: assign\n");
 
-    int lval_symid = node->left->token.value.symid;
-    fprintf(stderr, "[i] symid: %d\n", lval_symid);
+    char* lval_symval = node->left->token.value.symval;
+
     rvalue_t rval = evaluation(node->right);
 
     if (stack_isempty()) { // 스택이 비어있으면 (main procedure)
-      fprintf(stderr, "[i] global assigning, symtableTypeDef: %d\n", sym_global[lval_symid].type);
-      symbol_t* sym = get_symbol(lval_symid, sym_global);
+      fprintf(stderr, "[assign] stack is empty\n");
+      symbol_t* sym = get_symbol_by_name(lval_symval, sym_global);
+
+      int idx;
+
+      if (sym == NULL) {
+        idx = insert_symbol(lval_symval, &sym_global);
+        sym = get_symbol(idx, sym_global);
+      }
+
+      fprintf(stderr, "[assign] symid: %d, sym: %p\n", idx, sym);
+
+      token_data_t newtoken;
 
       if (rval.type == RVAL_REAL) {
-        sym->type = TYPE_VARIABLE_DOUBLE;
+        sym->type = RVAL_REAL;
         sym->value.real_constant = rval.value.dval;
+
+        fprintf(stderr, "[assign] value %f on symbol %s, global %p, idx %d\n",
+          newtoken.value.doubleval, lval_symval, sym_global, idx);
 
         retval.type = RVAL_REAL;
         retval.value.dval = rval.value.dval;
       }
       else if (rval.type == RVAL_INT) {
-        sym->type = TYPE_VARIABLE_INT;
+        sym->type = RVAL_INT;
         sym->value.integer_constant = rval.value.ival;
+
+        fprintf(stderr, "[assign] value %d on symbol %s, global %p, idx %d\n",
+          newtoken.value.intval, lval_symval, sym_global, idx);
 
         retval.type = RVAL_INT;
         retval.value.ival = rval.value.ival;
       }
 
-      fprintf(stderr, "[i] global assigning, after symtableTypeDef: %d\n", sym_global[lval_symid].type);
+      fprintf(stderr, "[i] global assigning, after symtableTypeDef: %d\n", sym->type);
 
       sym->assigned = true;
     }
     else { // subroutine 내부일 경우
       fprintf(stderr, "[i] local assigning\n");
-      if (!symbol_exists_on_table(lval_symid, sym_local)) { // 심볼id가 null이면 (할당 안됐으면)
-        symbol_t* sym = get_symbol(lval_symid, sym_global);
+      if (!symbol_exists_on_table_by_name(lval_symval, sym_local)) { // 심볼id가 null이면 (할당 안됐으면)
+        fprintf(stderr, "[assign] no such symbol at local, continuing with global\n");
+        symbol_t* sym = get_symbol_by_name(lval_symval, sym_global); // 글로벌에 삽입
+
+        int idx;
+
+        if (sym == NULL) {
+          idx = insert_symbol(lval_symval, &sym_global);
+          sym = get_symbol(idx, sym_global);
+        }
+
+        token_data_t newtoken;
 
         if (rval.type == RVAL_REAL) {
-          sym->type = TYPE_VARIABLE_DOUBLE;
-          sym->value.real_constant = rval.value.dval; 
+          sym->type = RVAL_INT;
+          sym->value.integer_constant = rval.value.ival;
+
+          fprintf(stderr, "[assign] value %f on symbol %s, global %p, idx %d\n",
+            newtoken.value.doubleval, lval_symval, sym_global, idx);
 
           retval.type = RVAL_REAL;
           retval.value.dval = rval.value.dval;
         }
         else if (rval.type == RVAL_INT) {
-          sym->type = TYPE_VARIABLE_INT;
+          sym->type = RVAL_INT;
           sym->value.integer_constant = rval.value.ival;
+
+          fprintf(stderr, "[assign] value %d on symbol %s, global %p, idx %d\n",
+            newtoken.value.intval, lval_symval, sym_global, idx);
 
           retval.type = RVAL_INT;
           retval.value.ival = rval.value.ival;
@@ -238,20 +276,36 @@ rvalue_t evaluation(ast_tree_t *node) {
         sym->assigned = true;
       }
       else { // 로컬에 할당
-        symbol_t* sym = get_symbol(lval_symid, sym_local);
+        fprintf(stderr, "[assign] found symbol at local\n");
+        symbol_t* sym = get_symbol_by_name(lval_symval, sym_local);
+
+        int idx;
+
+        if (sym == NULL) {
+          idx = insert_symbol(lval_symval, &sym_local);
+          sym = get_symbol(idx, sym_local);
+        }
 
         sym->assigned = true;
+        
+        token_data_t newtoken;
 
         if (rval.type == RVAL_REAL) {
-          sym->type = TYPE_VARIABLE_DOUBLE;
-          sym->value.real_constant = rval.value.dval;
+          sym->type = RVAL_INT;
+          sym->value.integer_constant = rval.value.ival;
+
+          fprintf(stderr, "[assign] value %f on symbol %s, local %p, idx %d\n",
+            newtoken.value.doubleval, lval_symval, sym_local, idx);
 
           retval.type = RVAL_REAL;
           retval.value.dval = rval.value.dval;
         }
         else if (rval.type == RVAL_INT) {
-          sym->type = TYPE_VARIABLE_INT;
+          sym->type = RVAL_INT;
           sym->value.integer_constant = rval.value.ival;
+
+          fprintf(stderr, "[assign] value %d on symbol %s, local %p, idx %d\n",
+            newtoken.value.intval, lval_symval, sym_local, idx);
 
           retval.type = RVAL_INT;
           retval.value.ival = rval.value.ival;
@@ -259,7 +313,8 @@ rvalue_t evaluation(ast_tree_t *node) {
       }
     }
 
-    print_symboltable(sym_global);
+    // print_symboltable(sym_local);
+    // print_symboltable(sym_global);
   }
   else if (token_data.type == TT_COMP_LGT) {
     if (EVAL_DEBUG)
@@ -405,30 +460,35 @@ rvalue_t evaluation(ast_tree_t *node) {
         fprintf(stderr, "[pcall] on arglist\n");
 
         int sidx;
-        token_data_t td;
         rvalue_t val;
+        symbol_t* symt;
 
         sidx = insert_symbol(req_arglist->token.value.argval, &sym_local); // 로컬에 심볼 자리 만들고
+        symt = get_symbol(sidx, sym_local);
         val = evaluation(arglist); // 현재 args를 evaluation함
 
         if (val.type == RVAL_INT) {
-          td.type = TYPE_VARIABLE_INT;
-          td.value.intval = val.value.ival;
-          fprintf(stderr, "[pcall] argval: %d\n", val.value.ival);
+          symt->type = TYPE_VARIABLE_INT;
+          symt->value.integer_constant = val.value.ival;
+          symt->assigned = true;
+
+          fprintf(stderr, "[pcall] loaded arg %s, argval: %d\n", req_arglist->token.value.argval, val.value.ival);
         }
         else {
-          td.type = TYPE_VARIABLE_DOUBLE;
-          td.value.doubleval = val.value.dval;
-          fprintf(stderr, "[pcall] argval: %f\n", val.value.dval);
-        }
+          symt->type = TYPE_VARIABLE_DOUBLE;
+          symt->value.real_constant = val.value.dval;
+          symt->assigned = true;
 
-        insert_symbol_value(sidx, td, &sym_local);
+          fprintf(stderr, "[pcall] loaded arg %s, argval: %f\n", req_arglist->token.value.argval, val.value.dval);
+        }
 
         print_symboltable(sym_local);
 
         req_arglist = req_arglist->arglist;
         arglist = arglist->arglist;
       }
+
+      fprintf(stderr, "[pcall] arguments loaded\n");
 
       rvalue_t fval = evaluation(func->ast); // run subroutine
 
@@ -518,23 +578,31 @@ rvalue_t evaluation(ast_tree_t *node) {
     if (val.type == RVAL_INT) {
       retval.type = RVAL_INT;
       retval.value.ival = val.value.ival;
+
+      fprintf(stderr, "[return] returning value %d\n", val.value.ival);
     }
     else {
       retval.type = RVAL_REAL;
       retval.value.dval = val.value.dval;
+
+      fprintf(stderr, "[return] returning value %f\n", val.value.dval);
     }
   }
   else if (token_data.type == TT_ID) {
     if (EVAL_DEBUG)
       fprintf(stderr, "[i] eval type: id\n");
 
-    int symid = token_data.value.symid;
+    char* symval = token_data.value.symval;
 
     // local stack이 차있으면 로컬에서 찾고
     if (!stack_isempty()) {
-      if (symbol_exists_on_table(symid, sym_local)) { // 로컬에 심볼이 있음
-        symbol_t* sym = get_symbol(symid, sym_local);
-        
+        fprintf(stderr, "[eval:TT_ID] stack is not empty, symval: %p, sym_local: %p\n",
+          symval, sym_local);
+      if (symbol_exists_on_table_by_name(symval, sym_local)) { // 로컬에 심볼이 있음
+        fprintf(stderr, "[eval:TT_ID] symbol on local, symval: %p, sym_local: %p\n",
+          symval, sym_local);
+        symbol_t* sym = get_symbol_by_name(symval, sym_local);
+
         if (sym->type == TYPE_VARIABLE_INT) {
           retval.type = RVAL_INT;
           retval.value.ival = sym->value.integer_constant;
@@ -545,7 +613,7 @@ rvalue_t evaluation(ast_tree_t *node) {
         }
       }
       else { // 로컬에 심볼이 없음: 글로벌에서 찾기
-        symbol_t* sym = get_symbol(symid, sym_global);
+        symbol_t* sym = get_symbol_by_name(symval, sym_global);
 
         if (sym->type == TYPE_VARIABLE_INT) {
           retval.type = RVAL_INT;
@@ -558,7 +626,8 @@ rvalue_t evaluation(ast_tree_t *node) {
       }
     }
     else { // stack이 비어있으면 글로벌에서 찾기
-      symbol_t* sym = get_symbol(symid, sym_global);
+      fprintf(stderr, "[eval:TT_ID] global var\n");
+      symbol_t* sym = get_symbol_by_name(symval, sym_global);
 
       if (sym->type == TYPE_VARIABLE_INT) {
         retval.type = RVAL_INT;

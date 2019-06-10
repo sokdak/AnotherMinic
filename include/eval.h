@@ -17,7 +17,7 @@ typedef struct rvalue {
   } value;
 } rvalue_t;
 
-void eval(program_t *, symbol_t *);
+void eval(program_t *);
 rvalue_t evaluation(ast_tree_t *);
 
 #endif
