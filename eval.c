@@ -490,7 +490,13 @@ rvalue_t evaluation(ast_tree_t *node) {
 
       fprintf(stderr, "[pcall] arguments loaded\n");
 
-      rvalue_t fval = evaluation(func->ast); // run subroutine
+      rvalue_t fval;
+      ast_tree_t* local_stmt = func->ast;
+
+      while (local_stmt != NULL) {
+        fval = evaluation(local_stmt); // run subroutine
+        local_stmt = local_stmt->stmtlist;
+      }
 
       if (fval.type == RVAL_INT) {
         retval.type = RVAL_INT;
