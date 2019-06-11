@@ -47,7 +47,7 @@
 %nonassoc THEN
 %nonassoc T_ELSE
 
-%type <treeptr> arg_list stmt stmt_list expr expr_list
+%type <treeptr> arg_list stmt stmt_list expr expr_list expr_sel
                 print_stmt control_stmt while_stmt return_stmt if_stmt block value
 
 %type <symbolptr> var_list local_decl
@@ -200,7 +200,7 @@ stmt_list     : stmt stmt_list { // stmt_list는 ast에 stmtlist에 계속 매�
                 }
               ;
 
-stmt          : expr T_COLON {
+stmt          : expr_sel T_COLON {
                   if (YACC_DEBUG)
                     fprintf(stderr, "reduce to stmt, expr colon\n");
 
@@ -229,10 +229,6 @@ stmt          : expr T_COLON {
                     fprintf(stderr, "reduce to stmt, block\n");
 
                   $$ = $1;
-                }
-              | /* epsilon */ {
-                  if (YACC_DEBUG)
-                    fprintf(stderr, "reduce to stmt, epsilon, notimpl\n");
                 }
               ;
 
@@ -301,6 +297,19 @@ block         : T_LCURLY stmt_list T_RCURLY {
                 }
               ;
 
+expr_sel      : T_ID T_ASSIGN expr_sel {
+                  if (YACC_DEBUG)
+                    fprintf(stderr, "reduce to expr, T_ID assign expr\n");
+
+                  token_data_t newtoken_l = { .type = TT_ID, .value.symval = strdup($1) };
+                  token_data_t newtoken = { .type = TT_ASSIGN };
+                  $$ = mknode(newtoken, mkleaf(newtoken_l), $3);
+                }
+              | expr {
+                  $$ = $1;
+                }
+              ;
+
 expr          : value {
                   if (YACC_DEBUG)
                     fprintf(stderr, "reduce to expr, value\n");
@@ -314,14 +323,6 @@ expr          : value {
                   // 노드 만들고 symid올리기
                   token_data_t newtoken = { .type = TT_ID, .value.symval = strdup($1) };
                   $$ = mkleaf(newtoken);
-                }
-              | T_ID T_ASSIGN expr { // 전역변수: 할당
-                  if (YACC_DEBUG)
-                    fprintf(stderr, "reduce to expr, T_ID assign expr\n");
-
-                  token_data_t newtoken_l = { .type = TT_ID, .value.symval = strdup($1) };
-                  token_data_t newtoken = { .type = TT_ASSIGN };
-                  $$ = mknode(newtoken, mkleaf(newtoken_l), $3);
                 }
               | expr T_PLUS expr {
                   if (YACC_DEBUG)
