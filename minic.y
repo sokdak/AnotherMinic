@@ -14,6 +14,7 @@
 #include "include/symbol.h"
 #include "include/log.h"
 #include "include/eval.h"
+#include "include/opt.h"
 %}
 %locations
 %union {
@@ -39,6 +40,7 @@
 %token T_DEF T_IF T_ELSE T_WHILE
 %token T_PRINT T_RETURN
 
+%left T_LGT T_LEGT T_RGT T_REGT T_EQ T_NEQ
 %left T_MINUS T_PLUS
 %left T_MULTI T_DIVIDE
 %right UMINUS
@@ -62,10 +64,15 @@ program       : fun_list stmt_list {
                   program->function = $1;
                   program->statement = $2;
 
-                  fprintf(stderr, "\n");
+                  if (YACC_DEBUG)
+                    fprintf(stderr, "\n");
+                  
                   eval(program);
 
-                  full_log(program);
+                  if (YACC_DEBUG)
+                    full_log(program);
+
+                  $$ = program;
                 } // function + main context
               | stmt_list {
                   if (YACC_DEBUG)
@@ -77,10 +84,15 @@ program       : fun_list stmt_list {
                   program->function = NULL;
                   program->statement = $1;
 
-                  fprintf(stderr, "\n");
+                  if (YACC_DEBUG) 
+                    fprintf(stderr, "\n");
+                  
                   eval(program);
 
-                  full_log(program);
+                  if (YACC_DEBUG)
+                    full_log(program);
+ 
+                  $$ = program;
                 } // main context만 있는 경우
               ;
 
@@ -109,16 +121,20 @@ fun_def       : T_DEF T_ID T_LPAREN arg_list T_RPAREN T_LCURLY local_decl stmt_l
                   // ast localvar에 arguments를 추가
                   ast_tree_t* newvar = newfunc->arguments;
 
-                  if (newvar) fprintf(stderr, "newvar at %p\n", newvar);
+                  if (YACC_DEBUG)
+                    if (newvar)
+                      fprintf(stderr, "newvar at %p\n", newvar);
 
                   while (newvar != NULL) {
                     insert_symbol(newvar->token.value.argval, &(newfunc->ast->localvar));
-                    fprintf(stderr, "[yacc] copying function arg(%s) into localsym(%p)\n",
-                      newvar->token.value.argval, newfunc->ast->localvar);
+                    if (YACC_DEBUG)
+                      fprintf(stderr, "[yacc] copying function arg(%s) into localsym(%p)\n",
+                        newvar->token.value.argval, newfunc->ast->localvar);
                     newvar = newvar->arglist;
                   }
 
-                  fprintf(stderr, "localsym current: %p\n", newvar);
+                  if (YACC_DEBUG)
+                    fprintf(stderr, "localsym current: %p\n", newvar);
 
                   $$ = newfunc;
                 }

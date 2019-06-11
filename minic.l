@@ -13,7 +13,8 @@ INTEGER       ([0]|[1-9][0-9]*)
 FLOAT         ([0-9]*\.[0-9]+)
 ID            (\_)*[A-Za-z][a-zA-Z0-9_]*
 DELIM         [ \t\r]
-WS            {DELIM}+
+NEWLINE       [\n]
+WS            ({DELIM}|{NEWLINE})+
 %%
 {WS}          ; /* ignoring whitespaces */
 

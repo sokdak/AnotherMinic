@@ -4,6 +4,7 @@
 #include <string.h>
 #include "include/symbol.h"
 #include "include/token.h"
+#include "include/opt.h"
 
 symbol_t** vblTable_stack = NULL;
 int vblTable_stack_depth = 0;
@@ -77,13 +78,14 @@ int insert_symbol(char* name, symbol_t** list) {
   int sindex = -1;
   int list_size = get_list_size(*list);
 
-  print_symboltable(*list);
-  fprintf(stderr, "   !!! adding symbol %s, current list size %d\n", name, list_size);
+  if (SYMBOL_DEBUG)
+    fprintf(stderr, "[symbol] insert, list_size %d\n", list_size);
 
   if ((sindex = find_symbol(name, *list)) == -1) {
     *list = (symbol_t*)realloc(*list, (list_size + 1) * sizeof(symbol_t)); // 포인터 사이즈 변경
 
-    fprintf(stderr, "   !!! resize table to %d\n", list_size + 1);
+    if (SYMBOL_DEBUG)
+      fprintf(stderr, "   !!! resize table to %d\n", list_size + 1);
 
     symbol_t* lsym;
 
@@ -107,8 +109,13 @@ int insert_symbol(char* name, symbol_t** list) {
 
     sindex = list_size;
 
-    fprintf(stderr, "save symbol at idx %d\n", sindex);
-  } fprintf(stderr, "symbol definition at %d\n", sindex);
+    if (SYMBOL_DEBUG)
+      fprintf(stderr, "save symbol at idx %d\n", sindex);
+  }
+  else {
+    if (SYMBOL_DEBUG)
+      fprintf(stderr, "symbol definition at %d\n", sindex);
+  }
 
   return sindex;
 }
@@ -152,7 +159,9 @@ bool symbol_exists_on_table(int idx, symbol_t* sym) {
 }
 
 bool symbol_exists_on_table_by_name(char* name, symbol_t* sym) {
-  fprintf(stderr, "name %s, sym %p\n", name, sym);
+  if (SYMBOL_DEBUG)
+    fprintf(stderr, "[symbol] name %s, sym %p\n", name, sym);
+  
   symbol_t* iter = sym;
 
   while (iter != NULL) {
@@ -169,16 +178,25 @@ void push_symboltable(symbol_t* sym) {
   vblTable_stack = (symbol_t**)realloc(vblTable_stack, sizeof(symbol_t) * (vblTable_stack_depth + 1));
   vblTable_stack[vblTable_stack_depth] = sym;
 
+  if (SYMBOL_DEBUG)
+    fprintf(stderr, "[symbol::push_table] pushed symboltable %p, idx %d\n", vblTable_stack[vblTable_stack_depth], vblTable_stack_depth);
+
   vblTable_stack_depth++;
 }
 
 symbol_t* pop_symboltable() {
   if (!stack_isempty()) {
     vblTable_stack_depth--;
+
+    if (SYMBOL_DEBUG)
+      fprintf(stderr, "[symbol::pop_table] popped symboltable %p, idx %d\n", vblTable_stack[vblTable_stack_depth], vblTable_stack_depth);
+
     return vblTable_stack[vblTable_stack_depth];
   }
   else {
-    fprintf(stderr, "[!] tried to pop symbol from empty stack\n");
+    if (SYMBOL_DEBUG)
+      fprintf(stderr, "[!] tried to pop symbol from empty stack\n");
+
     return NULL;
   }
 }
@@ -186,6 +204,40 @@ symbol_t* pop_symboltable() {
 bool stack_isempty() {
   if (vblTable_stack_depth > 0) return false;
   else return true;
+}
+
+symbol_t* hardcopy_symbollist(symbol_t* orglist) {
+  if (SYMBOL_DEBUG)
+    fprintf(stderr, "[symbol] hardcopy init\n");
+  
+  symbol_t *node, *cur;
+  symbol_t *tmp;
+
+  tmp = orglist;
+
+  node = (symbol_t*)malloc(sizeof(symbol_t));
+  node->name = strdup(orglist->name);
+  node->type = orglist->type;
+  node->value = orglist->value;
+  node->next = NULL;
+
+  cur = node;
+
+  tmp = tmp->next;
+
+  while (tmp != NULL) {
+    cur->next = (symbol_t*)malloc(sizeof(symbol_t));
+    
+    cur = cur->next;
+    cur->name = strdup(tmp->name);
+    cur->type = tmp->type;
+    cur->value = tmp->value;
+    cur->next = NULL;
+
+    tmp = tmp->next;
+  }
+
+  return node;
 }
 
 void print_symboltable(symbol_t* list) {
@@ -196,11 +248,11 @@ void print_symboltable(symbol_t* list) {
   while (sym != NULL) {
     if (sym->type != TYPE_VARIABLE_INT) {
       fprintf(stderr, "  [symbol:%s] assigned: %d, type: %d, value: %f\n", 
-      sym->name, sym->assigned, sym->type, sym->value.real_constant);
+        sym->name, sym->assigned, sym->type, sym->value.real_constant);
     }
     else {
       fprintf(stderr, "  [symbol:%s] assigned: %d, type: %d, value: %d\n", 
-      sym->name, sym->assigned, sym->type, sym->value.integer_constant);
+        sym->name, sym->assigned, sym->type, sym->value.integer_constant);
     }
     
     sym = sym->next;

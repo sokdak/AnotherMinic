@@ -4,8 +4,6 @@
 #include <stdbool.h>
 #include "node.h"
 
-#define EVAL_DEBUG true
-
 typedef struct function {
   int id;
   char *name;

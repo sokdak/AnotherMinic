@@ -42,6 +42,7 @@ bool symbol_exists_on_table_by_name(char *, symbol_t *);
 void push_symboltable(symbol_t *);
 symbol_t* pop_symboltable();
 bool stack_isempty();
+symbol_t* hardcopy_symbollist(symbol_t *);
 
 void print_symboltable(symbol_t *);
 
