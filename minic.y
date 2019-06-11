@@ -97,7 +97,7 @@ program       : fun_list stmt_list {
               ;
 
 fun_list      : fun_def fun_list {
-                  $$ = append_func($1, $2);
+                  $$ = append_func($2, $1);
                 }
               | fun_def {
                   $$ = $1;
@@ -127,9 +127,11 @@ fun_def       : T_DEF T_ID T_LPAREN arg_list T_RPAREN T_LCURLY local_decl stmt_l
 
                   while (newvar != NULL) {
                     insert_symbol(newvar->token.value.argval, &(newfunc->ast->localvar));
+
                     if (YACC_DEBUG)
                       fprintf(stderr, "[yacc] copying function arg(%s) into localsym(%p)\n",
                         newvar->token.value.argval, newfunc->ast->localvar);
+
                     newvar = newvar->arglist;
                   }
 

@@ -1,19 +1,37 @@
-def f(a,b)
+def func1(a, b)
 {
-  local c, d, e, f, g;
+  local ret;
 
-  if(a>b)
-    max = a;
-  else
-    max = b;
+  while (a + b > 100)
+  {
+    a = a + 3;
+    b = b - 1;
+  }
 
-  c = d = 3;
-  e = c / d + 1;
-    
-  return max;
+  ret = a + b * 100;
+
+  return ret;
 }
 
-x = y = 1;
+def func2(a, b)
+{
+  local ret;
 
-max = f(10,20);
-print max;
+  if (a >= b)
+    ret = 1;
+  else
+    ret = 0;
+
+  return ret;
+}
+
+a = b = 10;
+c = 1002.123;
+
+res = func1(a, b);
+
+print res;
+
+res = func2(c, res);
+
+print res;

@@ -17,5 +17,6 @@ typedef struct function {
 
 function_t* append_func(function_t *, function_t *);
 function_t* get_function(char *, function_t *);
+void print_functions(function_t *);
 
 #endif

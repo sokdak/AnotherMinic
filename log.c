@@ -8,11 +8,8 @@ void debug(char* msg, const char* tag) {
 }
 
 void full_log(program_t* program) {
-  if (program->function) {
-    fprintf(stderr, "[i] information of function %s\n", program->function->name);
-    fprintf(stderr, "local(%p)::", program->function->ast->localvar);
-    print_symboltable(program->function->ast->localvar);
-  }
+  if (program->function)
+    print_functions(program->function);
 
   fprintf(stderr, "global(%p)::", sym_global);
   print_symboltable(sym_global);

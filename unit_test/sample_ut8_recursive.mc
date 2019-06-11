@@ -3,7 +3,7 @@ def uplus(a, b) {
 
   b = b + 1;
 
-  if (a + b > 3)
+  if (a + b > 100)
     c = a + b;
   else
     c = uplus(a + 1, b);

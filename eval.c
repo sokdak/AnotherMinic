@@ -483,9 +483,7 @@ rvalue_t evaluation(ast_tree_t *node) {
         rvalue_t val;
         symbol_t* symt;
 
-        fprintf(stderr, "[eval::pcall] calling symins\n");
         sidx = insert_symbol(req_arglist->token.value.argval, &sym_local_new); // 로컬에 심볼 자리 만들고
-        fprintf(stderr, "[eval::pcall] called symins\n");
         symt = get_symbol(sidx, sym_local_new);
 
         // 해당 expression 값을 가져와서 symbol_local_new에 넣기 (스택 비었으면 글로벌)
@@ -532,9 +530,11 @@ rvalue_t evaluation(ast_tree_t *node) {
         local_stmt = local_stmt->stmtlist;
       }
 
-      if (fval.type == TYPE_VARIABLE_INT)
-        fprintf(stderr, "[eval::pcall] received return value %d\n", fval.value.ival);
-      else fprintf(stderr, "[eval::pcall] received return value %f\n", fval.value.dval);
+      if (EVAL_DEBUG) {
+        if (fval.type == TYPE_VARIABLE_INT)
+          fprintf(stderr, "[eval::pcall] received return value %d\n", fval.value.ival);
+        else fprintf(stderr, "[eval::pcall] received return value %f\n", fval.value.dval);
+      }
 
       if (fval.type == RVAL_INT) {
         retval.type = RVAL_INT;
@@ -549,8 +549,6 @@ rvalue_t evaluation(ast_tree_t *node) {
 
     if (arglist != NULL || req_arglist != NULL)
       runtime_error("argument does not match");
-
-    fprintf(stderr, "pcall out\n");
 
     sym_local = pop_symboltable(); // 스택이 차있다면 1-level 내려오기
   }
