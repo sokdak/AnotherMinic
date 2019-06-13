@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
   if (program != NULL)
     eval(program);
-  else fprintf(stderr, "Error(s) are occured while parse minic file.\nPlease fix these problems above.\n");
+  else fprintf(stderr, "Error(s) are occured while parse minic file.\nPlease fix these problems above and try again.\n");
 
   if (program != NULL && MAIN_DEBUG)
     full_log(program);

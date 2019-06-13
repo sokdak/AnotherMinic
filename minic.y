@@ -75,12 +75,12 @@ program       : fun_list stmt_list {
                     fprintf(stderr, "reduce to program: stmt, %p\n", $1);
 
                   if (!parse_error) {
-                    fprintf(stderr, "no parse error\n");
                     program = (program_t*)malloc(sizeof(program_t));
                     program->function = NULL;
                     program->statement = $1;
                   }
-                  //$$ = program;
+                  
+                  $$ = program;
                 } // main context만 있는 경우
               ;
 
