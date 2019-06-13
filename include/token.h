@@ -34,7 +34,8 @@ typedef enum token_type {
   TT_DEF,           // def
   TT_LOCAL,         // local
   TT_PROCEDURE_CALL,// procedure call
-  TT_ARGS
+  TT_ARGS,          // arguments
+  TT_BLOCK          // block
 } token_type_t;
 
 typedef struct token_data {

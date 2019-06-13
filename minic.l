@@ -5,6 +5,8 @@
 #include "include/minic.h"
 #include "include/symbol.h"
 #include "include/node.h"
+
+extern bool parse_error;
 %}
 %option noyywrap
 %option yylineno
@@ -57,5 +59,6 @@ WS            ({DELIM}|{NEWLINE})+
 // https://stackoverflow.com/questions/32472496/methods-in-yacc-to-get-line-no
 void yyerror(const char* msg)
 {
+  parse_error = true;
   fprintf(stderr, "error: %s at line %d\n", msg, yylineno);
 }

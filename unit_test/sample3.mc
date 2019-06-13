@@ -31,7 +31,10 @@ def func3(ab, cd) {
   if (ab + cd >= 10000)
     a = (ab + cd) * 1.5;
   else
+  {
+    a = ab + 10;
     a = func3(a, ab + cd);
+  }
 
   return a;
 }

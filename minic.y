@@ -15,6 +15,10 @@
 #include "include/log.h"
 #include "include/eval.h"
 #include "include/opt.h"
+
+extern program_t* program;
+
+bool parse_error = false;
 %}
 %locations
 %union {
@@ -58,41 +62,25 @@ program       : fun_list stmt_list {
                   if (YACC_DEBUG)
                     fprintf(stderr, "reduce to program: fun stmt\n");
 
-                  program_t* program;
-
-                  program = (program_t*)malloc(sizeof(program_t));
-                  program->function = $1;
-                  program->statement = $2;
-
-                  if (YACC_DEBUG)
-                    fprintf(stderr, "\n");
-                  
-                  eval(program);
-
-                  if (YACC_DEBUG)
-                    full_log(program);
+                  if (!parse_error) {
+                    program = (program_t*)malloc(sizeof(program_t));
+                    program->function = $1;
+                    program->statement = $2;
+                  }
 
                   $$ = program;
                 } // function + main context
               | stmt_list {
                   if (YACC_DEBUG)
-                    fprintf(stderr, "reduce to program: stmt\n");
+                    fprintf(stderr, "reduce to program: stmt, %p\n", $1);
 
-                  program_t* program;
-
-                  program = (program_t*)malloc(sizeof(program_t));
-                  program->function = NULL;
-                  program->statement = $1;
-
-                  if (YACC_DEBUG) 
-                    fprintf(stderr, "\n");
-                  
-                  eval(program);
-
-                  if (YACC_DEBUG)
-                    full_log(program);
- 
-                  $$ = program;
+                  if (!parse_error) {
+                    fprintf(stderr, "no parse error\n");
+                    program = (program_t*)malloc(sizeof(program_t));
+                    program->function = NULL;
+                    program->statement = $1;
+                  }
+                  //$$ = program;
                 } // main context만 있는 경우
               ;
 
@@ -224,11 +212,16 @@ stmt          : expr_sel T_COLON {
 
                   $$ = $1;
                 }
-              | block {
+              | block { // 블록은 그냥 올리면 안되고 stmtlist로 올려야 함
                   if (YACC_DEBUG)
                     fprintf(stderr, "reduce to stmt, block\n");
 
-                  $$ = $1;
+                  token_data_t newtoken = { .type = TT_BLOCK };
+                  $$ = mknode(newtoken, $1, NULL);
+                }
+              | error T_COLON {
+                  yyerrok;
+                  $$ = NULL;
                 }
               ;
 
@@ -305,7 +298,10 @@ expr_sel      : T_ID T_ASSIGN expr_sel {
                   token_data_t newtoken = { .type = TT_ASSIGN };
                   $$ = mknode(newtoken, mkleaf(newtoken_l), $3);
                 }
-              | expr {
+                | expr {
+                  if (YACC_DEBUG)
+                    fprintf(stderr, "reduce to expr_sel, expr\n");
+                  
                   $$ = $1;
                 }
               ;

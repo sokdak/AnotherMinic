@@ -221,8 +221,8 @@ rvalue_t evaluation(ast_tree_t *node) {
         sym->value.real_constant = rval.value.dval;
 
         if (EVAL_DEBUG)
-          fprintf(stderr, "[eval::assign] value %f on symbol %s, global %p, idx %d\n",
-            newtoken.value.doubleval, lval_symval, sym_global, idx);
+          fprintf(stderr, "[eval::assign] value %f on symbol %s, global %p\n",
+            newtoken.value.doubleval, lval_symval, sym_global);
 
         retval.type = RVAL_REAL;
         retval.value.dval = rval.value.dval;
@@ -232,8 +232,8 @@ rvalue_t evaluation(ast_tree_t *node) {
         sym->value.integer_constant = rval.value.ival;
 
         if (EVAL_DEBUG)
-          fprintf(stderr, "[eval::assign] value %d on symbol %s, global %p, idx %d\n",
-            newtoken.value.intval, lval_symval, sym_global, idx);
+          fprintf(stderr, "[eval::assign] value %d on symbol %s, global %p\n",
+            newtoken.value.intval, lval_symval, sym_global);
 
         retval.type = RVAL_INT;
         retval.value.ival = rval.value.ival;
@@ -645,6 +645,17 @@ rvalue_t evaluation(ast_tree_t *node) {
         fprintf(stderr, "[eval::return] returning value %f\n", val.value.dval);
     }
   }
+  else if (token_data.type == TT_BLOCK) {
+    if (EVAL_DEBUG)
+      fprintf(stderr, "[eval::block] init\n");
+
+    ast_tree_t* stmtlist = node->left;
+
+    while (stmtlist != NULL) {
+      evaluation(stmtlist);
+      stmtlist = stmtlist->stmtlist;
+    }
+  }
   else if (token_data.type == TT_ID) {
     if (EVAL_DEBUG)
       fprintf(stderr, "[eval::id] init\n");
@@ -674,6 +685,7 @@ rvalue_t evaluation(ast_tree_t *node) {
         }
       }
       else { // 로컬에 심볼이 없음: 글로벌에서 찾기
+        insert_symbol(symval, &sym_global);
         symbol_t* sym = get_symbol_by_name(symval, sym_global);
 
         if (sym->type == TYPE_VARIABLE_INT) {
@@ -688,8 +700,9 @@ rvalue_t evaluation(ast_tree_t *node) {
     }
     else { // stack이 비어있으면 글로벌에서 찾기
       if (EVAL_DEBUG)
-        fprintf(stderr, "[eval::id] global var\n");
+        fprintf(stderr, "[eval::id] global var %s\n", symval);
 
+      insert_symbol(symval, &sym_global);
       symbol_t* sym = get_symbol_by_name(symval, sym_global);
 
       if (sym->type == TYPE_VARIABLE_INT) {

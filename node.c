@@ -54,6 +54,9 @@ ast_tree_t* append_args(ast_tree_t* arg, ast_tree_t* org) {
 }
 
 ast_tree_t* append_stmts(ast_tree_t* arg, ast_tree_t* org) {
+  if (org == NULL)
+    return arg;
+  
   ast_tree_t* ret_tree = org;
   
   while (ret_tree->stmtlist != NULL) // NULL arg가 나올때 까지 반복

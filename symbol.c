@@ -52,6 +52,9 @@ symbol_t* get_symbol(int idx, symbol_t* list) {
 }
 
 symbol_t* get_symbol_by_name(char* name, symbol_t* list) {
+  if (SYMBOL_DEBUG)
+    fprintf(stderr, "[symbol] getsym by name, name %s, list %p\n", name, list);
+
   symbol_t* tmp = list;
 
   while (tmp != NULL) {
